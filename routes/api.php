@@ -3,6 +3,7 @@
 use App\Http\Controllers\Api\Auth\StudentAuthController;
 use App\Http\Controllers\Api\Auth\TrainerAuthController;
 use App\Http\Controllers\Api\Student\AssignmentController;
+use App\Http\Controllers\Api\Student\CompetitionController;
 use App\Http\Controllers\Api\Student\CourseController;
 use App\Http\Controllers\Api\Student\DashboardController;
 use App\Http\Controllers\Api\Student\LearningController;
@@ -164,6 +165,40 @@ Route::middleware('auth:sanctum')->prefix('student')->group(function () {
     Route::put('/projects/{projectId}/rating', [
         ProjectController::class,
         'rate'
+    ]);
+    Route::get('/competitions', [
+        CompetitionController::class,
+        'index'
+    ]);
+
+    Route::get('/competitions/{competitionId}', [
+        CompetitionController::class,
+        'show'
+    ]);
+
+    Route::post('/competitions/{competitionId}/register', [
+        CompetitionController::class,
+        'register'
+    ]);
+
+    Route::put('/competitions/{competitionId}/submission', [
+        CompetitionController::class,
+        'saveSubmission'
+    ]);
+
+    Route::post('/competitions/{competitionId}/submission/files', [
+        CompetitionController::class,
+        'uploadFiles'
+    ]);
+
+    Route::delete('/competitions/{competitionId}/submission/files/{fileId}', [
+        CompetitionController::class,
+        'deleteFile'
+    ]);
+
+    Route::post('/competitions/{competitionId}/submission/submit', [
+        CompetitionController::class,
+        'submit'
     ]);
 });
 
