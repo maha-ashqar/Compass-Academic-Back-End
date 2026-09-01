@@ -8,6 +8,7 @@ use App\Http\Controllers\Api\Student\CompetitionController;
 use App\Http\Controllers\Api\Student\CourseController;
 use App\Http\Controllers\Api\Student\DashboardController;
 use App\Http\Controllers\Api\Student\LearningController;
+use App\Http\Controllers\Api\Student\NotificationController;
 use App\Http\Controllers\Api\Student\ProfileController;
 use App\Http\Controllers\Api\Student\ProjectController;
 use Illuminate\Http\Request;
@@ -214,6 +215,18 @@ Route::middleware('auth:sanctum')->prefix('student')->group(function () {
     Route::delete('/achievements/credentials/{credentialId}', [
         AchievementController::class,
         'deleteCredential'
+    ]);
+    Route::get('/notifications', [
+        NotificationController::class,
+        'index'
+    ]);
+    Route::put('/notifications/read-all', [
+        NotificationController::class,
+        'markAllAsRead'
+    ]);
+    Route::put('/notifications/{notificationId}/read', [
+        NotificationController::class,
+        'markAsRead'
     ]);
 });
 

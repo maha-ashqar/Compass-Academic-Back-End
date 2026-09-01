@@ -57,94 +57,112 @@ class AchievementController extends Controller
     }
 
     public function storeCredential(Request $request)
-    {
-        $student = $this->studentFromRequest($request);
+{
+    $student = $this->studentFromRequest($request);
 
-        if (!$student) {
-            return response()->json([
-                'message' => 'Student profile not found.',
-            ], 404);
-        }
-
-        $validated = $request->validate([
-            'title' => [
-                'required',
-                'string',
-                'max:191',
-            ],
-            'issuer' => [
-                'required',
-                'string',
-                'max:191',
-            ],
-            'issue_date' => [
-                'nullable',
-                'date',
-            ],
-            'credential_id' => [
-                'nullable',
-                'string',
-                'max:191',
-            ],
-            'credential_url' => [
-                'required',
-                'url',
-                'max:2048',
-            ],
-            'description' => [
-                'nullable',
-                'string',
-                'max:5000',
-            ],
-            'file' => [
-                'nullable',
-                'file',
-                'mimes:pdf,png,jpg,jpeg,webp',
-                'max:5120',
-            ],
-        ]);
-
-        $filePath = null;
-
-        if ($request->hasFile('file')) {
-            $filePath = $request
-                ->file('file')
-                ->store(
-                    'student-credentials/' . $student->id,
-                    'public'
-                );
-        }
-
-        $credentialId = DB::table(
-            'student_credentials'
-        )->insertGetId([
-            'student_id' => $student->id,
-            'title' => $validated['title'],
-            'issuer' => $validated['issuer'],
-            'issue_date' =>
-                $validated['issue_date'] ?? null,
-            'credential_id' =>
-                $validated['credential_id'] ?? null,
-            'credential_url' =>
-                $validated['credential_url'],
-            'description' =>
-                $validated['description'] ?? null,
-            'file_path' => $filePath,
-            'is_verified' => false,
-            'created_at' => now(),
-            'updated_at' => now(),
-        ]);
-
+    if (!$student) {
         return response()->json([
-            'message' => 'Credential added successfully.',
-            'credential' => $this->credentialData(
-                DB::table('student_credentials')
-                    ->where('id', $credentialId)
-                    ->first()
-            ),
-        ], 201);
+            'message' => 'Student profile not found.',
+        ], 404);
     }
 
+    $validated = $request->validate([
+        'title' => [
+            'required',
+            'string',
+            'max:191',
+        ],
+        'issuer' => [
+            'required',
+            'string',
+            'max:191',
+        ],
+        'issue_date' => [
+            'nullable',
+            'date',
+        ],
+        'credential_id' => [
+            'nullable',
+            'string',
+            'max:191',
+        ],
+        'credential_url' => [
+            'required',
+            'url',
+            'max:2048',
+        ],
+        'description' => [
+            'nullable',
+            'string',
+            'max:5000',
+        ],
+        'file' => [
+            'nullable',
+            'file',
+            'mimes:pdf,png,jpg,jpeg,webp',
+            'max:5120',
+        ],
+    ]);
+
+    $filePath = null;
+
+    if ($request->hasFile('file')) {
+        $filePath = $request
+            ->file('file')
+            ->store(
+                'student-credentials/' . $student->id,
+                'public'
+            );
+    }
+
+    $credentialId = DB::table(
+        'student_credentials'
+    )->insertGetId([
+        'student_id' => $student->id,
+        'title' => $validated['title'],
+        'issuer' => $validated['issuer'],
+        'issue_date' =>
+            $validated['issue_date'] ?? null,
+        'credential_id' =>
+            $validated['credential_id'] ?? null,
+        'credential_url' =>
+            $validated['credential_url'],
+        'description' =>
+            $validated['description'] ?? null,
+        'file_path' => $filePath,
+        'is_verified' => false,
+        'created_at' => now(),
+        'updated_at' => now(),
+    ]);
+
+    DB::table('notifications')->insert([
+        'user_id' => $request->user()->id,
+        'type' => 'certificate',
+        'title' => 'Certificate added to your portfolio',
+        'message' =>
+            'Your certificate "' .
+            $validated['title'] .
+            '" was added successfully to your career portfolio.',
+        'data' => json_encode([
+            'category' => 'academics',
+            'icon' => '🏅',
+            'action_label' => 'View portfolio',
+            'action_tab' => 'Achievements',
+        ]),
+        'read_at' => null,
+        'created_at' => now(),
+        'updated_at' => now(),
+    ]);
+
+    return response()->json([
+        'message' => 'Credential added successfully.',
+        'credential' => $this->credentialData(
+            DB::table('student_credentials')
+                ->where('id', $credentialId)
+                ->first()
+        ),
+    ], 201);
+}
     public function deleteCredential(
         Request $request,
         int $credentialId
