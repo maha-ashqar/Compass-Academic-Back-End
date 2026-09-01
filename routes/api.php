@@ -2,6 +2,7 @@
 
 use App\Http\Controllers\Api\Auth\StudentAuthController;
 use App\Http\Controllers\Api\Auth\TrainerAuthController;
+use App\Http\Controllers\Api\Student\AchievementController;
 use App\Http\Controllers\Api\Student\AssignmentController;
 use App\Http\Controllers\Api\Student\CompetitionController;
 use App\Http\Controllers\Api\Student\CourseController;
@@ -200,10 +201,28 @@ Route::middleware('auth:sanctum')->prefix('student')->group(function () {
         CompetitionController::class,
         'submit'
     ]);
+    Route::get('/achievements', [
+        AchievementController::class,
+        'index'
+    ]);
+
+    Route::post('/achievements/credentials', [
+        AchievementController::class,
+        'storeCredential'
+    ]);
+
+    Route::delete('/achievements/credentials/{credentialId}', [
+        AchievementController::class,
+        'deleteCredential'
+    ]);
 });
 
 
 
+Route::get('/portfolio/{portfolioCode}', [
+    AchievementController::class,
+    'publicShow'
+]);
 
 
 
