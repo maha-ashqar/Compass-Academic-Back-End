@@ -8,6 +8,7 @@ use App\Http\Controllers\Api\Student\CompetitionController;
 use App\Http\Controllers\Api\Student\CourseController;
 use App\Http\Controllers\Api\Student\DashboardController;
 use App\Http\Controllers\Api\Student\LearningController;
+use App\Http\Controllers\Api\Student\MessageController;
 use App\Http\Controllers\Api\Student\NotificationController;
 use App\Http\Controllers\Api\Student\ProfileController;
 use App\Http\Controllers\Api\Student\ProjectController;
@@ -249,6 +250,55 @@ Route::middleware('auth:sanctum')->prefix('student')->group(function () {
         SettingsController::class,
         'reset'
     ]);
+    Route::get(
+        '/messages/directory',
+        [MessageController::class, 'directory']
+    );
+
+    Route::get(
+        '/messages/conversations',
+        [MessageController::class, 'index']
+    );
+
+    Route::post(
+        '/messages/conversations',
+        [MessageController::class, 'storeConversation']
+    );
+
+    Route::get(
+        '/messages/conversations/{conversationId}',
+        [MessageController::class, 'show']
+    );
+
+    Route::put(
+        '/messages/conversations/{conversationId}/read',
+        [MessageController::class, 'markAsRead']
+    );
+
+    Route::post(
+        '/messages/conversations/{conversationId}/messages',
+        [MessageController::class, 'sendMessage']
+    );
+
+    Route::put(
+        '/messages/conversations/{conversationId}/messages/{messageId}',
+        [MessageController::class, 'updateMessage']
+    );
+
+    Route::delete(
+        '/messages/conversations/{conversationId}/messages/{messageId}',
+        [MessageController::class, 'deleteMessage']
+    );
+
+    Route::put(
+        '/messages/conversations/{conversationId}/block',
+        [MessageController::class, 'toggleBlock']
+    );
+
+    Route::delete(
+        '/messages/conversations/{conversationId}/messages',
+        [MessageController::class, 'clearConversation']
+    );
 });
 
 
