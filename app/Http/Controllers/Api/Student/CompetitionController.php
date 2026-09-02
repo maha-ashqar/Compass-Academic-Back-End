@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Api\Student;
 
 use App\Http\Controllers\Controller;
+use App\Services\NotificationService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\DB;
@@ -309,6 +310,22 @@ class CompetitionController extends Controller
 
             return $registrationId;
         });
+
+        NotificationService::create(
+            $request->user()->id,
+            'competition',
+            'Competition application sent',
+            'Your application for "' .
+                $competition->title .
+                '" was sent successfully.',
+            [
+                'category' => 'competitions',
+                'icon' => '🏆',
+                'action_label' => 'View competition',
+                'action_tab' => 'Competitions',
+                'competition_id' => $competitionId,
+            ]
+        );
 
         return response()->json([
             'message' => 'Competition application sent successfully.',
@@ -744,6 +761,9 @@ class CompetitionController extends Controller
             ], 422);
         }
 
+        $wasChangesRequested =
+            $submission->status === 'changes_requested';
+
         DB::table('competition_submissions')
             ->where('id', $submission->id)
             ->update([
@@ -751,6 +771,24 @@ class CompetitionController extends Controller
                 'submitted_at' => now(),
                 'updated_at' => now(),
             ]);
+
+        NotificationService::create(
+            $request->user()->id,
+            'competition',
+            $wasChangesRequested
+                ? 'Competition work resubmitted'
+                : 'Competition work submitted',
+            'Your work for "' .
+                $context['competition']->title .
+                '" was submitted successfully.',
+            [
+                'category' => 'competitions',
+                'icon' => '📤',
+                'action_label' => 'View competition',
+                'action_tab' => 'Competitions',
+                'competition_id' => $competitionId,
+            ]
+        );
 
         return response()->json([
             'message' => 'Competition work submitted successfully.',

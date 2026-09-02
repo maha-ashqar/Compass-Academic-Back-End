@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Api\Student;
 
 use App\Http\Controllers\Controller;
+use App\Services\NotificationService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\DB;
@@ -59,22 +60,22 @@ class AssignmentController extends Controller
             ->orderBy('a.deadline_at')
             ->orderByDesc('a.id')
             ->get()
-            ->map(fn($assignment) => $this->formatAssignment($assignment))
+            ->map(fn ($assignment) => $this->formatAssignment($assignment))
             ->values();
 
         $counts = [
             'all' => $assignments->count(),
             'pending' => $assignments
-                ->filter(fn($item) => $item['filter_status'] === 'pending')
+                ->filter(fn ($item) => $item['filter_status'] === 'pending')
                 ->count(),
             'overdue' => $assignments
-                ->filter(fn($item) => $item['filter_status'] === 'overdue')
+                ->filter(fn ($item) => $item['filter_status'] === 'overdue')
                 ->count(),
             'submitted' => $assignments
-                ->filter(fn($item) => $item['filter_status'] === 'submitted')
+                ->filter(fn ($item) => $item['filter_status'] === 'submitted')
                 ->count(),
             'graded' => $assignments
-                ->filter(fn($item) => $item['filter_status'] === 'graded')
+                ->filter(fn ($item) => $item['filter_status'] === 'graded')
                 ->count(),
         ];
 
@@ -292,6 +293,28 @@ class AssignmentController extends Controller
                 'submitted_at' => $now,
                 'updated_at' => $now,
             ]);
+
+        $notificationTitle = match ($status) {
+            'resubmitted' => 'Assignment resubmitted',
+            'late' => 'Assignment submitted late',
+            default => 'Assignment submitted',
+        };
+
+        NotificationService::create(
+            $request->user()->id,
+            'assignment',
+            $notificationTitle,
+            'Your submission for "' .
+                $assignment->title .
+                '" was sent successfully.',
+            [
+                'category' => 'academics',
+                'icon' => '📝',
+                'action_label' => 'View assignments',
+                'action_tab' => 'Assignments',
+                'assignment_id' => $assignmentId,
+            ]
+        );
 
         return response()->json([
             'message' => $status === 'late'
@@ -577,7 +600,7 @@ class AssignmentController extends Controller
             'title' => $assignment->title,
             'description' => $assignment->description,
             'submission_instructions' =>
-            $assignment->submission_instructions,
+                $assignment->submission_instructions,
             'max_grade' => (int) $assignment->max_grade,
             'opens_at' => $assignment->opens_at,
             'deadline_at' => $assignment->deadline_at,
@@ -600,13 +623,6 @@ class AssignmentController extends Controller
     private function assignmentState($assignment): string
     {
         if ($assignment->status === 'closed') {
-            return 'closed';
-        }
-
-        if (
-            $assignment->deadline_at &&
-            Carbon::parse($assignment->deadline_at)->isPast()
-        ) {
             return 'closed';
         }
 
@@ -715,7 +731,7 @@ class AssignmentController extends Controller
             ->where('submission_id', $submissionId)
             ->orderBy('id')
             ->get()
-            ->map(fn($file) => $this->submissionFileData($file))
+            ->map(fn ($file) => $this->submissionFileData($file))
             ->values()
             ->all();
     }

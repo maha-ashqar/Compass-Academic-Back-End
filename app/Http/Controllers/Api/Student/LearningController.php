@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Api\Student;
 
 use App\Http\Controllers\Controller;
+use App\Services\NotificationService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 
@@ -416,11 +417,16 @@ class LearningController extends Controller
             $courseId
         );
 
+        $courseCompletedNow = false;
+
         if (
             $courseProgress['total_lessons'] > 0 &&
             $courseProgress['completed_lessons'] ===
                 $courseProgress['total_lessons']
         ) {
+            $courseCompletedNow =
+                $enrollment->status !== 'completed';
+
             DB::table('enrollments')
                 ->where('id', $enrollment->id)
                 ->update([
@@ -429,6 +435,28 @@ class LearningController extends Controller
                         $enrollment->completed_at ?: $now,
                     'updated_at' => $now,
                 ]);
+
+            if ($courseCompletedNow) {
+                $courseTitle = DB::table('courses')
+                    ->where('id', $courseId)
+                    ->value('title');
+
+                NotificationService::create(
+                    $request->user()->id,
+                    'course',
+                    'Course completed',
+                    'You completed "' .
+                        ($courseTitle ?: 'your course') .
+                        '". Great work!',
+                    [
+                        'category' => 'academics',
+                        'icon' => '🎓',
+                        'action_label' => 'View my courses',
+                        'action_tab' => 'MyCourses',
+                        'course_id' => $courseId,
+                    ]
+                );
+            }
         } elseif ($enrollment->status === 'completed') {
             DB::table('enrollments')
                 ->where('id', $enrollment->id)
@@ -456,6 +484,8 @@ class LearningController extends Controller
                 'completed_at' => $progress->completed_at,
             ],
             'course_progress' => $courseProgress,
+            'course_completed_now' =>
+                $courseCompletedNow,
             'next_lesson' => $this->nextLesson(
                 $student->id,
                 $courseId

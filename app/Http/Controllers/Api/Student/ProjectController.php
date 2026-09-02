@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Api\Student;
 
 use App\Http\Controllers\Controller;
+use App\Services\NotificationService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Storage;
@@ -524,6 +525,8 @@ class ProjectController extends Controller
             ], 422);
         }
 
+        $wasRevision = $project->status === 'revision_requested';
+
         DB::table('projects')
             ->where('id', $projectId)
             ->update([
@@ -531,6 +534,24 @@ class ProjectController extends Controller
                 'submitted_for_review_at' => now(),
                 'updated_at' => now(),
             ]);
+
+        NotificationService::create(
+            $request->user()->id,
+            'project',
+            $wasRevision
+                ? 'Project resubmitted for review'
+                : 'Project submitted for review',
+            'Your project "' .
+                $project->title .
+                '" was sent for review successfully.',
+            [
+                'category' => 'academics',
+                'icon' => '🚀',
+                'action_label' => 'View projects',
+                'action_tab' => 'Projects gallery',
+                'project_id' => $projectId,
+            ]
+        );
 
         return response()->json([
             'message' => 'Project submitted for review successfully.',
