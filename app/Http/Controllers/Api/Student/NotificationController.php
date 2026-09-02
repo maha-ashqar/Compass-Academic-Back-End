@@ -19,11 +19,28 @@ class NotificationController extends Controller
             ], 403);
         }
 
+        $student = DB::table('students')
+            ->where('user_id', $user->id)
+            ->first();
+
+        $settings = $student
+            ? DB::table('student_settings')
+                ->where('student_id', $student->id)
+                ->first()
+            : null;
+
         $notifications = DB::table('notifications')
             ->where('user_id', $user->id)
             ->orderByDesc('created_at')
             ->orderByDesc('id')
             ->get()
+            ->filter(
+                fn ($notification) =>
+                    $this->notificationEnabled(
+                        $notification->type,
+                        $settings
+                    )
+            )
             ->map(
                 fn ($notification) =>
                     $this->notificationData($notification)
@@ -221,4 +238,34 @@ class NotificationController extends Controller
 
         return 'Earlier';
     }
+    private function notificationEnabled(
+        string $type,
+        $settings
+    ): bool {
+        if (!$settings) {
+            return true;
+        }
+
+        return match ($type) {
+            'assignment' =>
+                (bool) $settings->assignment_notifications,
+            'grade' =>
+                (bool) $settings->grade_notifications,
+            'course' =>
+                (bool) $settings->course_notifications,
+            'project' =>
+                (bool) $settings->project_notifications,
+            'competition' =>
+                (bool) $settings->competition_notifications,
+            'message' =>
+                (bool) $settings->message_notifications,
+            'announcement' =>
+                (bool) $settings->announcement_notifications,
+            'certificate',
+            'achievement' =>
+                (bool) $settings->achievement_notifications,
+            default => true,
+        };
+    }
+
 }

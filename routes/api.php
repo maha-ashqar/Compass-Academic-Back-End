@@ -11,6 +11,7 @@ use App\Http\Controllers\Api\Student\LearningController;
 use App\Http\Controllers\Api\Student\NotificationController;
 use App\Http\Controllers\Api\Student\ProfileController;
 use App\Http\Controllers\Api\Student\ProjectController;
+use App\Http\Controllers\Api\Student\SettingsController;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
 
@@ -227,6 +228,26 @@ Route::middleware('auth:sanctum')->prefix('student')->group(function () {
     Route::put('/notifications/{notificationId}/read', [
         NotificationController::class,
         'markAsRead'
+    ]);
+
+    Route::get('/settings', [
+        SettingsController::class,
+        'index'
+    ]);
+
+    Route::put('/settings', [
+        SettingsController::class,
+        'update'
+    ]);
+
+    Route::put('/settings/password', [
+        SettingsController::class,
+        'changePassword'
+    ]);
+
+    Route::post('/settings/reset', [
+        SettingsController::class,
+        'reset'
     ]);
 });
 
