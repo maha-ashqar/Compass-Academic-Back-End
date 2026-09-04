@@ -21,6 +21,13 @@ Route::get('/user', function (Request $request) {
 })->middleware('auth:sanctum');
 
 Route::post('/student/login', [StudentAuthController::class, 'login']);
+Route::post('/student/register', [StudentAuthController::class, 'register']);
+
+Route::post('/student/forgot-password', [StudentAuthController::class, 'forgotPassword']);
+
+Route::post('/student/forgot-password/verify', [StudentAuthController::class, 'verifyResetCode']);
+
+Route::post('/student/reset-password', [StudentAuthController::class, 'resetPassword']);
 
 Route::middleware('auth:sanctum')->prefix('student')->group(function () {
 
