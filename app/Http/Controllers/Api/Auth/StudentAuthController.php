@@ -193,12 +193,25 @@ class StudentAuthController extends Controller
             ]
         );
 
-        Mail::raw(
-            "Your Compass Academy password reset code is: {$code}\n\nThis code expires in 15 minutes.",
+        $frontendUrl = rtrim(
+            env('FRONTEND_URL', 'http://localhost:5173'),
+            '/'
+        );
+
+        $resetUrl = $frontendUrl
+            . '/forgot-password?email=' . urlencode($email)
+            . '&code=' . urlencode($code);
+        Mail::send(
+            'emails.student-password-reset',
+            [
+                'code' => $code,
+                'name' => $user->name,
+                'resetUrl' => $resetUrl,
+            ],
             function ($message) use ($email) {
                 $message
                     ->to($email)
-                    ->subject('Compass Academy Password Reset');
+                    ->subject('Your Compass Academy verification code');
             }
         );
 
