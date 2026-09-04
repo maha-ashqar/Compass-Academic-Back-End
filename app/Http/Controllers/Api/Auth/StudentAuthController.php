@@ -8,6 +8,7 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Str;
 use Illuminate\Validation\ValidationException;
@@ -201,19 +202,30 @@ class StudentAuthController extends Controller
         $resetUrl = $frontendUrl
             . '/forgot-password?email=' . urlencode($email)
             . '&code=' . urlencode($code);
-        Mail::send(
-            'emails.student-password-reset',
-            [
-                'code' => $code,
-                'name' => $user->name,
-                'resetUrl' => $resetUrl,
+        $html = view('emails.student-password-reset', [
+            'code' => $code,
+            'name' => $user->name,
+            'resetUrl' => $resetUrl,
+        ])->render();
+
+        Http::withHeaders([
+            'api-key' => config('services.brevo.key'),
+            'accept' => 'application/json',
+            'content-type' => 'application/json',
+        ])->post('https://api.brevo.com/v3/smtp/email', [
+            'sender' => [
+                'name' => config('services.brevo.sender_name'),
+                'email' => config('services.brevo.sender_email'),
             ],
-            function ($message) use ($email) {
-                $message
-                    ->to($email)
-                    ->subject('Your Compass Academy verification code');
-            }
-        );
+            'to' => [
+                [
+                    'email' => $email,
+                    'name' => $user->name,
+                ],
+            ],
+            'subject' => 'Your Compass Academy verification code',
+            'htmlContent' => $html,
+        ])->throw();
 
         // For local testing only
         if (app()->environment('local')) {
