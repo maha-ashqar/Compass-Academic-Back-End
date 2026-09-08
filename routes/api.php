@@ -13,6 +13,8 @@ use App\Http\Controllers\Api\Student\NotificationController;
 use App\Http\Controllers\Api\Student\ProfileController;
 use App\Http\Controllers\Api\Student\ProjectController;
 use App\Http\Controllers\Api\Student\SettingsController;
+use App\Http\Controllers\Api\Trainer\DashboardController as TrainerDashboardController;
+use App\Http\Controllers\Api\Trainer\TrainerCourseController;
 use Illuminate\Support\Facades\Route;
 
 
@@ -26,6 +28,25 @@ Route::prefix('trainer')->group(function () {
     Route::middleware('auth:sanctum')->group(function () {
         Route::get('/me', [TrainerAuthController::class, 'me']);
         Route::post('/logout', [TrainerAuthController::class, 'logout']);
+
+        Route::get('/dashboard', [TrainerDashboardController::class, 'index']);
+        Route::get('/courses', [TrainerCourseController::class, 'index']);
+        Route::post('/courses', [TrainerCourseController::class, 'store']);
+        Route::put('/courses/{courseId}', [TrainerCourseController::class, 'update']);
+
+        Route::post('/courses/{courseId}/publish', [TrainerCourseController::class, 'publish']);
+        Route::post('/courses/{courseId}/hide', [TrainerCourseController::class, 'hide']);
+        Route::post('/courses/{courseId}/archive', [TrainerCourseController::class, 'archive']);
+        Route::post('/courses/{courseId}/duplicate', [TrainerCourseController::class, 'duplicate']);
+
+        Route::delete('/courses/{courseId}', [TrainerCourseController::class, 'destroy']);
+
+        Route::post('/courses/{courseId}/modules', [TrainerCourseController::class, 'storeModule']);
+        Route::put('/courses/{courseId}/modules/reorder', [TrainerCourseController::class, 'reorderModules']);
+
+        Route::post('/courses/{courseId}/modules/{moduleId}/lessons', [TrainerCourseController::class, 'storeLesson']);
+        Route::put('/courses/{courseId}/lessons/{lessonId}', [TrainerCourseController::class, 'updateLesson']);
+        Route::delete('/courses/{courseId}/lessons/{lessonId}', [TrainerCourseController::class, 'destroyLesson']);
     });
 });
 
