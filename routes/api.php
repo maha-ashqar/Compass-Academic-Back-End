@@ -13,21 +13,29 @@ use App\Http\Controllers\Api\Student\NotificationController;
 use App\Http\Controllers\Api\Student\ProfileController;
 use App\Http\Controllers\Api\Student\ProjectController;
 use App\Http\Controllers\Api\Student\SettingsController;
-use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
 
-Route::get('/user', function (Request $request) {
-    return $request->user();
-})->middleware('auth:sanctum');
+
+
+
+
+
+Route::prefix('trainer')->group(function () {
+    Route::post('/login', [TrainerAuthController::class, 'login']);
+
+    Route::middleware('auth:sanctum')->group(function () {
+        Route::get('/me', [TrainerAuthController::class, 'me']);
+        Route::post('/logout', [TrainerAuthController::class, 'logout']);
+    });
+});
+
 
 Route::post('/student/login', [StudentAuthController::class, 'login']);
 Route::post('/student/register', [StudentAuthController::class, 'register']);
-
 Route::post('/student/forgot-password', [StudentAuthController::class, 'forgotPassword']);
-
 Route::post('/student/forgot-password/verify', [StudentAuthController::class, 'verifyResetCode']);
-
 Route::post('/student/reset-password', [StudentAuthController::class, 'resetPassword']);
+
 
 Route::middleware('auth:sanctum')->prefix('student')->group(function () {
 
