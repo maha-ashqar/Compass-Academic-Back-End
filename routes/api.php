@@ -16,6 +16,7 @@ use App\Http\Controllers\Api\Student\SettingsController;
 use App\Http\Controllers\Api\Trainer\DashboardController as TrainerDashboardController;
 use App\Http\Controllers\Api\Trainer\TrainerAssignmentController;
 use App\Http\Controllers\Api\Trainer\TrainerCourseController;
+use App\Http\Controllers\Api\Trainer\TrainerProjectController;
 use App\Http\Controllers\Api\Trainer\TrainerStudentController;
 use Illuminate\Support\Facades\Route;
 
@@ -32,47 +33,48 @@ Route::prefix('trainer')->group(function () {
         Route::post('/logout', [TrainerAuthController::class, 'logout']);
 
         Route::get('/dashboard', [TrainerDashboardController::class, 'index']);
+
         Route::get('/courses', [TrainerCourseController::class, 'index']);
         Route::post('/courses', [TrainerCourseController::class, 'store']);
         Route::put('/courses/{courseId}', [TrainerCourseController::class, 'update']);
-
         Route::post('/courses/{courseId}/publish', [TrainerCourseController::class, 'publish']);
         Route::post('/courses/{courseId}/hide', [TrainerCourseController::class, 'hide']);
         Route::post('/courses/{courseId}/archive', [TrainerCourseController::class, 'archive']);
         Route::post('/courses/{courseId}/duplicate', [TrainerCourseController::class, 'duplicate']);
-
         Route::delete('/courses/{courseId}', [TrainerCourseController::class, 'destroy']);
-
         Route::post('/courses/{courseId}/modules', [TrainerCourseController::class, 'storeModule']);
         Route::put('/courses/{courseId}/modules/reorder', [TrainerCourseController::class, 'reorderModules']);
-
         Route::post('/courses/{courseId}/modules/{moduleId}/lessons', [TrainerCourseController::class, 'storeLesson']);
         Route::put('/courses/{courseId}/lessons/{lessonId}', [TrainerCourseController::class, 'updateLesson']);
         Route::delete('/courses/{courseId}/lessons/{lessonId}', [TrainerCourseController::class, 'destroyLesson']);
 
         Route::get('/students', [TrainerStudentController::class, 'index']);
         Route::get('/students/{studentId}', [TrainerStudentController::class, 'show']);
+
         Route::get('/assignments', [TrainerAssignmentController::class, 'index']);
         Route::post('/assignments', [TrainerAssignmentController::class, 'store']);
         Route::get('/assignments/{assignmentId}', [TrainerAssignmentController::class, 'show']);
         Route::put('/assignments/{assignmentId}', [TrainerAssignmentController::class, 'update']);
-
         Route::post('/assignments/{assignmentId}/publish', [TrainerAssignmentController::class, 'publish']);
         Route::post('/assignments/{assignmentId}/duplicate', [TrainerAssignmentController::class, 'duplicate']);
         Route::post('/assignments/{assignmentId}/archive', [TrainerAssignmentController::class, 'archive']);
         Route::delete('/assignments/{assignmentId}', [TrainerAssignmentController::class, 'destroy']);
-
         Route::post('/assignments/{assignmentId}/extend-deadline', [TrainerAssignmentController::class, 'extendDeadline']);
         Route::post('/assignments/{assignmentId}/close', [TrainerAssignmentController::class, 'close']);
         Route::post('/assignments/{assignmentId}/reopen', [TrainerAssignmentController::class, 'reopen']);
-
         Route::get('/assignments/{assignmentId}/submissions', [TrainerAssignmentController::class, 'submissions']);
-
         Route::put('/assignments/{assignmentId}/submissions/{submissionId}/grade', [TrainerAssignmentController::class, 'gradeSubmission']);
-
         Route::post('/assignments/{assignmentId}/submissions/{submissionId}/request-resubmission', [TrainerAssignmentController::class, 'requestResubmission']);
-
         Route::delete('/assignments/{assignmentId}/submissions/{submissionId}', [TrainerAssignmentController::class, 'destroySubmission']);
+
+        Route::get('/projects', [TrainerProjectController::class, 'index']);
+        Route::post('/projects', [TrainerProjectController::class, 'store']);
+        Route::get('/projects/{projectId}', [TrainerProjectController::class, 'show']);
+        Route::post('/projects/{projectId}/review', [TrainerProjectController::class, 'saveReview']);
+        Route::post('/projects/{projectId}/approve', [TrainerProjectController::class, 'approve']);
+        Route::post('/projects/{projectId}/request-changes', [TrainerProjectController::class, 'requestChanges']);
+        Route::post('/projects/{projectId}/unpublish', [TrainerProjectController::class, 'unpublish']);
+        Route::delete('/projects/{projectId}', [TrainerProjectController::class, 'destroy']);
     });
 });
 
