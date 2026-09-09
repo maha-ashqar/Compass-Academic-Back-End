@@ -14,6 +14,7 @@ use App\Http\Controllers\Api\Student\ProfileController;
 use App\Http\Controllers\Api\Student\ProjectController;
 use App\Http\Controllers\Api\Student\SettingsController;
 use App\Http\Controllers\Api\Trainer\DashboardController as TrainerDashboardController;
+use App\Http\Controllers\Api\Trainer\TrainerAssignmentController;
 use App\Http\Controllers\Api\Trainer\TrainerCourseController;
 use App\Http\Controllers\Api\Trainer\TrainerStudentController;
 use Illuminate\Support\Facades\Route;
@@ -51,6 +52,27 @@ Route::prefix('trainer')->group(function () {
 
         Route::get('/students', [TrainerStudentController::class, 'index']);
         Route::get('/students/{studentId}', [TrainerStudentController::class, 'show']);
+        Route::get('/assignments', [TrainerAssignmentController::class, 'index']);
+        Route::post('/assignments', [TrainerAssignmentController::class, 'store']);
+        Route::get('/assignments/{assignmentId}', [TrainerAssignmentController::class, 'show']);
+        Route::put('/assignments/{assignmentId}', [TrainerAssignmentController::class, 'update']);
+
+        Route::post('/assignments/{assignmentId}/publish', [TrainerAssignmentController::class, 'publish']);
+        Route::post('/assignments/{assignmentId}/duplicate', [TrainerAssignmentController::class, 'duplicate']);
+        Route::post('/assignments/{assignmentId}/archive', [TrainerAssignmentController::class, 'archive']);
+        Route::delete('/assignments/{assignmentId}', [TrainerAssignmentController::class, 'destroy']);
+
+        Route::post('/assignments/{assignmentId}/extend-deadline', [TrainerAssignmentController::class, 'extendDeadline']);
+        Route::post('/assignments/{assignmentId}/close', [TrainerAssignmentController::class, 'close']);
+        Route::post('/assignments/{assignmentId}/reopen', [TrainerAssignmentController::class, 'reopen']);
+
+        Route::get('/assignments/{assignmentId}/submissions', [TrainerAssignmentController::class, 'submissions']);
+
+        Route::put('/assignments/{assignmentId}/submissions/{submissionId}/grade', [TrainerAssignmentController::class, 'gradeSubmission']);
+
+        Route::post('/assignments/{assignmentId}/submissions/{submissionId}/request-resubmission', [TrainerAssignmentController::class, 'requestResubmission']);
+
+        Route::delete('/assignments/{assignmentId}/submissions/{submissionId}', [TrainerAssignmentController::class, 'destroySubmission']);
     });
 });
 
