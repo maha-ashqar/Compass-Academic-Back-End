@@ -15,6 +15,7 @@ use App\Http\Controllers\Api\Student\ProjectController;
 use App\Http\Controllers\Api\Student\SettingsController;
 use App\Http\Controllers\Api\Trainer\DashboardController as TrainerDashboardController;
 use App\Http\Controllers\Api\Trainer\TrainerCourseController;
+use App\Http\Controllers\Api\Trainer\TrainerStudentController;
 use Illuminate\Support\Facades\Route;
 
 
@@ -47,6 +48,9 @@ Route::prefix('trainer')->group(function () {
         Route::post('/courses/{courseId}/modules/{moduleId}/lessons', [TrainerCourseController::class, 'storeLesson']);
         Route::put('/courses/{courseId}/lessons/{lessonId}', [TrainerCourseController::class, 'updateLesson']);
         Route::delete('/courses/{courseId}/lessons/{lessonId}', [TrainerCourseController::class, 'destroyLesson']);
+
+        Route::get('/students', [TrainerStudentController::class, 'index']);
+        Route::get('/students/{studentId}', [TrainerStudentController::class, 'show']);
     });
 });
 
