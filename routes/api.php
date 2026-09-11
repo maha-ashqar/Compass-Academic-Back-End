@@ -21,6 +21,7 @@ use App\Http\Controllers\Api\Trainer\TrainerCompetitionController;
 use App\Http\Controllers\Api\Trainer\TrainerCourseController;
 use App\Http\Controllers\Api\Trainer\TrainerMessageController;
 use App\Http\Controllers\Api\Trainer\TrainerNotificationController;
+use App\Http\Controllers\Api\Trainer\TrainerPasswordResetController;
 use App\Http\Controllers\Api\Trainer\TrainerProfileController;
 use App\Http\Controllers\Api\Trainer\TrainerProjectController;
 use App\Http\Controllers\Api\Trainer\TrainerSettingsController;
@@ -33,7 +34,13 @@ use Illuminate\Support\Facades\Route;
 
 
 Route::prefix('trainer')->group(function () {
+
     Route::post('/login', [TrainerAuthController::class, 'login']);
+    Route::post('register',[TrainerAuthController::class, 'register']);
+    Route::post('forgot-password',[TrainerAuthController::class, 'forgotPassword']);
+    Route::post('forgot-password/verify',[TrainerAuthController::class, 'verifyResetCode']);
+    Route::post('reset-password',[TrainerAuthController::class, 'resetPassword']);
+
 
     Route::middleware('auth:sanctum')->group(function () {
         Route::get('/me', [TrainerAuthController::class, 'me']);
