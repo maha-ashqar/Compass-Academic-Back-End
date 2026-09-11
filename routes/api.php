@@ -13,13 +13,15 @@ use App\Http\Controllers\Api\Student\NotificationController;
 use App\Http\Controllers\Api\Student\ProfileController;
 use App\Http\Controllers\Api\Student\ProjectController;
 use App\Http\Controllers\Api\Student\SettingsController;
+use App\Http\Controllers\Api\Student\StudentAnnouncementController;
 use App\Http\Controllers\Api\Trainer\DashboardController as TrainerDashboardController;
+use App\Http\Controllers\Api\Trainer\TrainerAnnouncementController;
 use App\Http\Controllers\Api\Trainer\TrainerAssignmentController;
 use App\Http\Controllers\Api\Trainer\TrainerCompetitionController;
 use App\Http\Controllers\Api\Trainer\TrainerCourseController;
+use App\Http\Controllers\Api\Trainer\TrainerProfileController;
 use App\Http\Controllers\Api\Trainer\TrainerProjectController;
 use App\Http\Controllers\Api\Trainer\TrainerStudentController;
-use App\Http\Controllers\Api\Trainer\TrainerProfileController;
 use Illuminate\Support\Facades\Route;
 
 
@@ -104,6 +106,19 @@ Route::prefix('trainer')->group(function () {
         Route::delete('/profile/avatar', [TrainerProfileController::class, 'deleteAvatar']);
         Route::post('/profile/degree-certificate', [TrainerProfileController::class, 'uploadDegreeCertificate']);
         Route::delete('/profile/degree-certificate', [TrainerProfileController::class, 'deleteDegreeCertificate']);
+
+        Route::get('/announcements',[TrainerAnnouncementController::class, 'index']);
+Route::post('/announcements',[TrainerAnnouncementController::class, 'store']);
+Route::post('/announcements/publish-due',[TrainerAnnouncementController::class, 'publishDue']);
+Route::get('/announcements/{announcementId}',[TrainerAnnouncementController::class, 'show']);
+Route::put('/announcements/{announcementId}',[TrainerAnnouncementController::class, 'update']);
+Route::patch('/announcements/{announcementId}',[TrainerAnnouncementController::class, 'update']);
+Route::delete('/announcements/{announcementId}',[TrainerAnnouncementController::class, 'destroy']);
+Route::post('/announcements/{announcementId}/publish',[TrainerAnnouncementController::class, 'publish']);
+Route::post('/announcements/{announcementId}/schedule',[TrainerAnnouncementController::class, 'schedule']);
+Route::post('/announcements/{announcementId}/archive',[TrainerAnnouncementController::class, 'archive']);
+Route::post('/announcements/{announcementId}/duplicate',[TrainerAnnouncementController::class, 'duplicate']);
+Route::get('/announcements/{announcementId}/stats',[TrainerAnnouncementController::class, 'stats']);
     });
 });
 
@@ -392,6 +407,17 @@ Route::middleware('auth:sanctum')->prefix('student')->group(function () {
         '/messages/conversations/{conversationId}/messages',
         [MessageController::class, 'clearConversation']
     );
+
+
+    Route::get(
+    '/announcements/{announcementId}',
+    [StudentAnnouncementController::class, 'show']
+);
+
+Route::put(
+    '/announcements/{announcementId}/read',
+    [StudentAnnouncementController::class, 'markAsRead']
+);
 });
 
 
