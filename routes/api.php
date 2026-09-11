@@ -15,6 +15,7 @@ use App\Http\Controllers\Api\Student\ProjectController;
 use App\Http\Controllers\Api\Student\SettingsController;
 use App\Http\Controllers\Api\Trainer\DashboardController as TrainerDashboardController;
 use App\Http\Controllers\Api\Trainer\TrainerAssignmentController;
+use App\Http\Controllers\Api\Trainer\TrainerCompetitionController;
 use App\Http\Controllers\Api\Trainer\TrainerCourseController;
 use App\Http\Controllers\Api\Trainer\TrainerProjectController;
 use App\Http\Controllers\Api\Trainer\TrainerStudentController;
@@ -75,6 +76,24 @@ Route::prefix('trainer')->group(function () {
         Route::post('/projects/{projectId}/request-changes', [TrainerProjectController::class, 'requestChanges']);
         Route::post('/projects/{projectId}/unpublish', [TrainerProjectController::class, 'unpublish']);
         Route::delete('/projects/{projectId}', [TrainerProjectController::class, 'destroy']);
+
+        Route::get('/competitions', [TrainerCompetitionController::class, 'index']);
+        Route::post('/competitions', [TrainerCompetitionController::class, 'store']);
+        Route::get('/competitions/{competitionId}', [TrainerCompetitionController::class, 'show']);
+        Route::put('/competitions/{competitionId}', [TrainerCompetitionController::class, 'update']);
+        Route::patch('/competitions/{competitionId}', [TrainerCompetitionController::class, 'update']);
+        Route::delete('/competitions/{competitionId}', [TrainerCompetitionController::class, 'destroy']);
+        Route::patch('/competitions/{competitionId}/status', [TrainerCompetitionController::class, 'updateStatus']);
+        Route::get('/competitions/{competitionId}/registrations', [TrainerCompetitionController::class, 'registrations']);
+        Route::patch('/competitions/{competitionId}/registrations/{registrationId}/approve', [TrainerCompetitionController::class, 'approveRegistration']);
+        Route::patch('/competitions/{competitionId}/registrations/{registrationId}/reject', [TrainerCompetitionController::class, 'rejectRegistration']);
+        Route::patch('/competitions/{competitionId}/registrations/{registrationId}/disqualify', [TrainerCompetitionController::class, 'disqualifyRegistration']);
+        Route::get('/competitions/{competitionId}/submissions', [TrainerCompetitionController::class, 'submissions']);
+        Route::get('/competitions/{competitionId}/submissions/{submissionId}', [TrainerCompetitionController::class, 'showSubmission']);
+        Route::patch('/competitions/{competitionId}/submissions/{submissionId}/review', [TrainerCompetitionController::class, 'reviewSubmission']);
+        Route::put('/competitions/{competitionId}/submissions/{submissionId}/score', [TrainerCompetitionController::class, 'scoreSubmission']);
+        Route::get('/competitions/{competitionId}/results', [TrainerCompetitionController::class, 'results']);
+        Route::post('/competitions/{competitionId}/results/publish', [TrainerCompetitionController::class, 'publishResults']);
     });
 });
 
