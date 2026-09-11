@@ -19,6 +19,7 @@ use App\Http\Controllers\Api\Trainer\TrainerAnnouncementController;
 use App\Http\Controllers\Api\Trainer\TrainerAssignmentController;
 use App\Http\Controllers\Api\Trainer\TrainerCompetitionController;
 use App\Http\Controllers\Api\Trainer\TrainerCourseController;
+use App\Http\Controllers\Api\Trainer\TrainerMessageController;
 use App\Http\Controllers\Api\Trainer\TrainerNotificationController;
 use App\Http\Controllers\Api\Trainer\TrainerProfileController;
 use App\Http\Controllers\Api\Trainer\TrainerProjectController;
@@ -127,6 +128,17 @@ Route::prefix('trainer')->group(function () {
         Route::get('/notifications', [TrainerNotificationController::class, 'index']);
         Route::put('/notifications/read-all', [TrainerNotificationController::class, 'markAllAsRead']);
         Route::put('/notifications/{notificationId}/read', [TrainerNotificationController::class, 'markAsRead']);
+
+        Route::get('/messages/conversations',[TrainerMessageController::class, 'index']);
+        Route::get('/messages/conversations/{conversationId}',[TrainerMessageController::class, 'show']);
+        Route::put('/messages/conversations/{conversationId}/read',[TrainerMessageController::class, 'markAsRead']);
+        Route::put('/messages/conversations/{conversationId}/accept',[TrainerMessageController::class, 'accept']);
+        Route::put('/messages/conversations/{conversationId}/decline',[TrainerMessageController::class, 'decline']);
+        Route::post('/messages/conversations/{conversationId}/messages',[TrainerMessageController::class, 'sendMessage']);
+        Route::put('/messages/conversations/{conversationId}/messages/{messageId}',[TrainerMessageController::class, 'updateMessage']);
+        Route::delete('/messages/conversations/{conversationId}/messages/{messageId}',[TrainerMessageController::class, 'deleteMessage']);
+        Route::put('/messages/conversations/{conversationId}/block',[TrainerMessageController::class, 'toggleBlock']);
+        Route::delete('/messages/conversations/{conversationId}/messages',[TrainerMessageController::class, 'clearConversation']);
     });
 });
 
