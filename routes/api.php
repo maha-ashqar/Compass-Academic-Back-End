@@ -19,6 +19,7 @@ use App\Http\Controllers\Api\Trainer\TrainerCompetitionController;
 use App\Http\Controllers\Api\Trainer\TrainerCourseController;
 use App\Http\Controllers\Api\Trainer\TrainerProjectController;
 use App\Http\Controllers\Api\Trainer\TrainerStudentController;
+use App\Http\Controllers\Api\Trainer\TrainerProfileController;
 use Illuminate\Support\Facades\Route;
 
 
@@ -94,6 +95,15 @@ Route::prefix('trainer')->group(function () {
         Route::put('/competitions/{competitionId}/submissions/{submissionId}/score', [TrainerCompetitionController::class, 'scoreSubmission']);
         Route::get('/competitions/{competitionId}/results', [TrainerCompetitionController::class, 'results']);
         Route::post('/competitions/{competitionId}/results/publish', [TrainerCompetitionController::class, 'publishResults']);
+
+
+        Route::get('/profile', [TrainerProfileController::class, 'show']);
+        Route::put('/profile', [TrainerProfileController::class, 'update']);
+        Route::patch('/profile', [TrainerProfileController::class, 'update']);
+        Route::post('/profile/avatar', [TrainerProfileController::class, 'uploadAvatar']);
+        Route::delete('/profile/avatar', [TrainerProfileController::class, 'deleteAvatar']);
+        Route::post('/profile/degree-certificate', [TrainerProfileController::class, 'uploadDegreeCertificate']);
+        Route::delete('/profile/degree-certificate', [TrainerProfileController::class, 'deleteDegreeCertificate']);
     });
 });
 
