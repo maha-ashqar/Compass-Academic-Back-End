@@ -53,4 +53,27 @@ class NotificationService
             $data
         );
     }
+    public static function createForTrainer(
+        int $trainerId,
+        string $type,
+        string $title,
+        ?string $message = null,
+        array $data = []
+    ): ?int {
+        $userId = DB::table('trainers')
+            ->where('id', $trainerId)
+            ->value('user_id');
+
+        if (!$userId) {
+            return null;
+        }
+
+        return self::create(
+            (int) $userId,
+            $type,
+            $title,
+            $message,
+            $data
+        );
+    }
 }
