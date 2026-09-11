@@ -21,16 +21,16 @@ use App\Http\Controllers\Api\Trainer\TrainerCompetitionController;
 use App\Http\Controllers\Api\Trainer\TrainerCourseController;
 use App\Http\Controllers\Api\Trainer\TrainerMessageController;
 use App\Http\Controllers\Api\Trainer\TrainerNotificationController;
-use App\Http\Controllers\Api\Trainer\TrainerPasswordResetController;
 use App\Http\Controllers\Api\Trainer\TrainerProfileController;
 use App\Http\Controllers\Api\Trainer\TrainerProjectController;
 use App\Http\Controllers\Api\Trainer\TrainerSettingsController;
 use App\Http\Controllers\Api\Trainer\TrainerStudentController;
 use Illuminate\Support\Facades\Route;
+use App\Http\Controllers\Api\HomeController;
 
 
 
-
+Route::get('/home', [HomeController::class, 'index']);
 
 
 Route::prefix('trainer')->group(function () {
