@@ -458,109 +458,170 @@ class ProjectController extends Controller
     }
 
     public function submit(
-        Request $request,
-        int $projectId
+    Request $request,
+    int $projectId
+) {
+    $student = $this->studentFromRequest($request);
+
+    if (!$student) {
+        return response()->json([
+            'message' => 'Student profile not found.',
+        ], 404);
+    }
+
+    $project = $this->ownedProject(
+        $student->id,
+        $projectId
+    );
+
+    if (!$project) {
+        return response()->json([
+            'message' => 'Project not found.',
+        ], 404);
+    }
+
+    if (
+        !in_array(
+            $project->status,
+            ['draft', 'revision_requested'],
+            true
+        )
     ) {
-        $student = $this->studentFromRequest($request);
+        return response()->json([
+            'message' =>
+                'This project cannot be submitted right now.',
+        ], 422);
+    }
 
-        if (!$student) {
-            return response()->json([
-                'message' => 'Student profile not found.',
-            ], 404);
+    $errors = [];
+
+    if (!trim((string) $project->title)) {
+        $errors['title'][] =
+            'Project title is required.';
+    }
+
+    if (!$project->category_id) {
+        $errors['category_id'][] =
+            'Project category is required.';
+    }
+
+    if (!trim((string) $project->idea)) {
+        $errors['idea'][] =
+            'Project idea is required.';
+    }
+
+    if ($project->project_type === 'team') {
+        $memberCount = DB::table('project_members')
+            ->where('project_id', $projectId)
+            ->where('role', 'member')
+            ->count();
+
+        if ($memberCount < 1) {
+            $errors['members'][] =
+                'Add at least one team member.';
         }
+    }
 
-        $project = $this->ownedProject(
-            $student->id,
-            $projectId
-        );
+    if ($errors) {
+        return response()->json([
+            'message' => 'Project validation failed.',
+            'errors' => $errors,
+        ], 422);
+    }
 
-        if (!$project) {
-            return response()->json([
-                'message' => 'Project not found.',
-            ], 404);
-        }
+    $wasRevision =
+        $project->status === 'revision_requested';
 
-        if (
-            !in_array(
-                $project->status,
-                ['draft', 'revision_requested'],
-                true
-            )
-        ) {
-            return response()->json([
-                'message' => 'This project cannot be submitted right now.',
-            ], 422);
-        }
+    DB::table('projects')
+        ->where('id', $projectId)
+        ->update([
+            'status' => 'in_review',
+            'submitted_for_review_at' => now(),
+            'updated_at' => now(),
+        ]);
 
-        $errors = [];
+    /*
+    |--------------------------------------------------------------------------
+    | Student notification
+    |--------------------------------------------------------------------------
+    */
 
-        if (!trim((string) $project->title)) {
-            $errors['title'][] = 'Project title is required.';
-        }
+    NotificationService::create(
+        $request->user()->id,
+        'project',
+        $wasRevision
+            ? 'Project resubmitted for review'
+            : 'Project submitted for review',
+        'Your project "' .
+            $project->title .
+            '" was sent for review successfully.',
+        [
+            'category' => 'academics',
+            'icon' => '🚀',
+            'action_label' => 'View projects',
+            'action_tab' => 'Projects gallery',
+            'project_id' => $projectId,
+        ]
+    );
 
-        if (!$project->category_id) {
-            $errors['category_id'][] = 'Project category is required.';
-        }
+    /*
+    |--------------------------------------------------------------------------
+    | Trainer notification
+    |--------------------------------------------------------------------------
+    */
 
-        if (!trim((string) $project->idea)) {
-            $errors['idea'][] = 'Project idea is required.';
-        }
+    $trainerId = null;
 
-        if ($project->project_type === 'team') {
-            $memberCount = DB::table('project_members')
-                ->where('project_id', $projectId)
-                ->where('role', 'member')
-                ->count();
+    if ($project->course_id) {
+        $trainerId = DB::table('courses')
+            ->where('id', $project->course_id)
+            ->value('trainer_id');
+    }
 
-            if ($memberCount < 1) {
-                $errors['members'][] =
-                    'Add at least one team member.';
-            }
-        }
-
-        if ($errors) {
-            return response()->json([
-                'message' => 'Project validation failed.',
-                'errors' => $errors,
-            ], 422);
-        }
-
-        $wasRevision = $project->status === 'revision_requested';
-
-        DB::table('projects')
-            ->where('id', $projectId)
-            ->update([
-                'status' => 'in_review',
-                'submitted_for_review_at' => now(),
-                'updated_at' => now(),
-            ]);
-
-        NotificationService::create(
-            $request->user()->id,
+    if ($trainerId) {
+        NotificationService::createForTrainer(
+            (int) $trainerId,
             'project',
             $wasRevision
                 ? 'Project resubmitted for review'
-                : 'Project submitted for review',
-            'Your project "' .
+                : 'New project submitted for review',
+            $request->user()->name .
+                ' submitted "' .
                 $project->title .
-                '" was sent for review successfully.',
+                '" for review.',
             [
-                'category' => 'academics',
-                'icon' => '🚀',
-                'action_label' => 'View projects',
-                'action_tab' => 'Projects gallery',
-                'project_id' => $projectId,
+                'category' => 'projects',
+                'icon' => '💼',
+
+                'action_label' =>
+                    'Review project',
+
+                'action_tab' =>
+                    'Projects',
+
+                'project_id' =>
+                    (int) $projectId,
+
+                'student_id' =>
+                    (int) $student->id,
+
+                'course_id' =>
+                    (int) $project->course_id,
             ]
         );
+    }
 
-        return response()->json([
-            'message' => 'Project submitted for review successfully.',
-            'project' => $this->projectData(
+    return response()->json([
+        'message' =>
+            'Project submitted for review successfully.',
+
+        'project' =>
+            $this->projectData(
                 $projectId,
                 $student->id
             ),
-        ]);
-    }
+    ]);
+}
 
     public function destroy(
         Request $request,

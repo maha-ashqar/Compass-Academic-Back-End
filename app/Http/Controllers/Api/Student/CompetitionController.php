@@ -91,252 +91,440 @@ class CompetitionController extends Controller
     }
 
     public function register(
-        Request $request,
-        int $competitionId
-    ) {
-        $student = $this->studentFromRequest($request);
+    Request $request,
+    int $competitionId
+) {
+    $student = $this->studentFromRequest($request);
 
-        if (!$student) {
-            return response()->json([
-                'message' => 'Student profile not found.',
-            ], 404);
-        }
+    if (!$student) {
+        return response()->json([
+            'message' => 'Student profile not found.',
+        ], 404);
+    }
 
-        $competition = DB::table('competitions')
-            ->where('id', $competitionId)
-            ->first();
+    $competition = DB::table('competitions')
+        ->where('id', $competitionId)
+        ->first();
 
-        if (!$competition) {
-            return response()->json([
-                'message' => 'Competition not found.',
-            ], 404);
-        }
+    if (!$competition) {
+        return response()->json([
+            'message' => 'Competition not found.',
+        ], 404);
+    }
 
-        if (!$this->registrationIsOpen($competition)) {
-            return response()->json([
-                'message' => 'Registration is closed for this competition.',
-            ], 422);
-        }
+    if (!$this->registrationIsOpen($competition)) {
+        return response()->json([
+            'message' =>
+                'Registration is closed for this competition.',
+        ], 422);
+    }
 
-        $existing = $this->studentRegistration(
-            $competitionId,
-            $student->id
-        );
+    $existing = $this->studentRegistration(
+        $competitionId,
+        $student->id
+    );
 
-        if (
-            $existing &&
-            !in_array(
-                $existing->status,
-                ['rejected', 'withdrawn'],
-                true
-            )
-        ) {
-            return response()->json([
-                'message' => 'You already have a registration for this competition.',
-            ], 422);
-        }
-
-        $participationValues = match (
-            $competition->participation_type
-        ) {
-            'individual' => ['individual'],
-            'team' => ['team'],
-            default => ['individual', 'team'],
-        };
-
-        $maxTeamMembers = max(
-            1,
-            (int) ($competition->max_team_members ?? 1)
-        );
-
-        $validated = $request->validate([
-            'participation_type' => [
-                'required',
-                Rule::in($participationValues),
-            ],
-            'team_name' => [
-                'nullable',
-                'string',
-                'max:191',
-                Rule::requiredIf(
-                    $request->input('participation_type') === 'team'
-                ),
-            ],
-            'members' => [
-                'nullable',
-                'array',
-                'max:' . max(0, $maxTeamMembers - 1),
-            ],
-            'members.*.name' => [
-                'required_with:members',
-                'string',
-                'max:191',
-            ],
-            'members.*.email' => [
-                'required_with:members',
-                'email',
-                'max:191',
-            ],
-            'members.*.role' => [
-                'nullable',
-                'string',
-                'max:191',
-            ],
-        ]);
-
-        if (
-            $validated['participation_type'] === 'team' &&
-            empty($validated['members'])
-        ) {
-            return response()->json([
-                'message' => 'Add at least one team member.',
-            ], 422);
-        }
-
-        $memberEmails = collect(
-            $validated['members'] ?? []
+    if (
+        $existing &&
+        !in_array(
+            $existing->status,
+            ['rejected', 'withdrawn'],
+            true
         )
-            ->pluck('email')
-            ->map(fn ($email) => mb_strtolower(trim($email)))
-            ->filter();
+    ) {
+        return response()->json([
+            'message' =>
+                'You already have a registration for this competition.',
+        ], 422);
+    }
 
-        if ($memberEmails->duplicates()->isNotEmpty()) {
-            return response()->json([
-                'message' => 'Team member emails must be unique.',
-            ], 422);
-        }
+    $participationValues = match (
+        $competition->participation_type
+    ) {
+        'individual' => ['individual'],
+        'team' => ['team'],
+        default => ['individual', 'team'],
+    };
 
-        $currentEmail = mb_strtolower(
-            trim((string) $request->user()->email)
-        );
+    $maxTeamMembers = max(
+        1,
+        (int) ($competition->max_team_members ?? 1)
+    );
 
-        if ($memberEmails->contains($currentEmail)) {
-            return response()->json([
-                'message' => 'Do not add yourself as a team member.',
-            ], 422);
-        }
+    $validated = $request->validate([
+        'participation_type' => [
+            'required',
+            Rule::in($participationValues),
+        ],
 
-        $registrationId = DB::transaction(function () use (
-            $competitionId,
-            $student,
-            $request,
-            $validated,
-            $existing
-        ) {
-            if ($existing) {
-                DB::table('competition_registration_members')
-                    ->where(
-                        'competition_registration_id',
-                        $existing->id
+        'team_name' => [
+            'nullable',
+            'string',
+            'max:191',
+            Rule::requiredIf(
+                $request->input(
+                    'participation_type'
+                ) === 'team'
+            ),
+        ],
+
+        'members' => [
+            'nullable',
+            'array',
+            'max:' .
+                max(
+                    0,
+                    $maxTeamMembers - 1
+                ),
+        ],
+
+        'members.*.name' => [
+            'required_with:members',
+            'string',
+            'max:191',
+        ],
+
+        'members.*.email' => [
+            'required_with:members',
+            'email',
+            'max:191',
+        ],
+
+        'members.*.role' => [
+            'nullable',
+            'string',
+            'max:191',
+        ],
+    ]);
+
+    if (
+        $validated['participation_type'] ===
+            'team' &&
+        empty($validated['members'])
+    ) {
+        return response()->json([
+            'message' =>
+                'Add at least one team member.',
+        ], 422);
+    }
+
+    $memberEmails = collect(
+        $validated['members'] ?? []
+    )
+        ->pluck('email')
+        ->map(
+            fn ($email) =>
+                mb_strtolower(
+                    trim($email)
+                )
+        )
+        ->filter();
+
+    if (
+        $memberEmails
+            ->duplicates()
+            ->isNotEmpty()
+    ) {
+        return response()->json([
+            'message' =>
+                'Team member emails must be unique.',
+        ], 422);
+    }
+
+    $currentEmail = mb_strtolower(
+        trim(
+            (string) $request->user()->email
+        )
+    );
+
+    if (
+        $memberEmails->contains(
+            $currentEmail
+        )
+    ) {
+        return response()->json([
+            'message' =>
+                'Do not add yourself as a team member.',
+        ], 422);
+    }
+
+    $registrationId =
+        DB::transaction(
+            function () use (
+                $competitionId,
+                $student,
+                $request,
+                $validated,
+                $existing
+            ) {
+                if ($existing) {
+                    DB::table(
+                        'competition_registration_members'
                     )
-                    ->delete();
+                        ->where(
+                            'competition_registration_id',
+                            $existing->id
+                        )
+                        ->delete();
 
-                DB::table('competition_registrations')
-                    ->where('id', $existing->id)
-                    ->update([
-                        'team_name' =>
-                            $validated['participation_type'] === 'team'
-                                ? $validated['team_name']
-                                : null,
-                        'status' => 'pending',
-                        'rejection_reason' => null,
-                        'reviewed_at' => null,
-                        'registered_at' => now(),
-                        'updated_at' => now(),
-                    ]);
+                    DB::table(
+                        'competition_registrations'
+                    )
+                        ->where(
+                            'id',
+                            $existing->id
+                        )
+                        ->update([
+                            'team_name' =>
+                                $validated[
+                                    'participation_type'
+                                ] === 'team'
+                                    ? $validated[
+                                        'team_name'
+                                    ]
+                                    : null,
 
-                $registrationId = $existing->id;
-            } else {
-                $registrationId = DB::table(
-                    'competition_registrations'
-                )->insertGetId([
-                    'competition_id' => $competitionId,
-                    'team_name' =>
-                        $validated['participation_type'] === 'team'
-                            ? $validated['team_name']
-                            : null,
-                    'status' => 'pending',
-                    'rejection_reason' => null,
-                    'reviewed_at' => null,
-                    'registered_at' => now(),
-                    'created_at' => now(),
-                    'updated_at' => now(),
-                ]);
-            }
+                            'status' =>
+                                'pending',
 
-            DB::table('competition_registration_members')
-                ->insert([
-                    'competition_registration_id' => $registrationId,
-                    'student_id' => $student->id,
-                    'member_name' => $request->user()->name,
-                    'member_email' => $request->user()->email,
-                    'role' => 'leader',
+                            'rejection_reason' =>
+                                null,
+
+                            'reviewed_at' =>
+                                null,
+
+                            'registered_at' =>
+                                now(),
+
+                            'updated_at' =>
+                                now(),
+                        ]);
+
+                    $registrationId =
+                        $existing->id;
+                } else {
+                    $registrationId =
+                        DB::table(
+                            'competition_registrations'
+                        )->insertGetId([
+                            'competition_id' =>
+                                $competitionId,
+
+                            'team_name' =>
+                                $validated[
+                                    'participation_type'
+                                ] === 'team'
+                                    ? $validated[
+                                        'team_name'
+                                    ]
+                                    : null,
+
+                            'status' =>
+                                'pending',
+
+                            'rejection_reason' =>
+                                null,
+
+                            'reviewed_at' =>
+                                null,
+
+                            'registered_at' =>
+                                now(),
+
+                            'created_at' =>
+                                now(),
+
+                            'updated_at' =>
+                                now(),
+                        ]);
+                }
+
+                DB::table(
+                    'competition_registration_members'
+                )->insert([
+                    'competition_registration_id' =>
+                        $registrationId,
+
+                    'student_id' =>
+                        $student->id,
+
+                    'member_name' =>
+                        $request->user()->name,
+
+                    'member_email' =>
+                        $request->user()->email,
+
+                    'role' =>
+                        'leader',
+
                     'member_role' =>
-                        $validated['participation_type'] === 'team'
+                        $validated[
+                            'participation_type'
+                        ] === 'team'
                             ? 'Team leader'
                             : 'Individual participant',
-                    'created_at' => now(),
-                    'updated_at' => now(),
+
+                    'created_at' =>
+                        now(),
+
+                    'updated_at' =>
+                        now(),
                 ]);
 
-            foreach ($validated['members'] ?? [] as $member) {
-                $memberStudentId = DB::table('users as u')
-                    ->join(
-                        'students as s',
-                        's.user_id',
-                        '=',
-                        'u.id'
-                    )
-                    ->whereRaw(
-                        'LOWER(u.email) = ?',
-                        [mb_strtolower(trim($member['email']))]
-                    )
-                    ->value('s.id');
+                foreach (
+                    $validated['members'] ?? []
+                    as $member
+                ) {
+                    $memberStudentId =
+                        DB::table(
+                            'users as u'
+                        )
+                            ->join(
+                                'students as s',
+                                's.user_id',
+                                '=',
+                                'u.id'
+                            )
+                            ->whereRaw(
+                                'LOWER(u.email) = ?',
+                                [
+                                    mb_strtolower(
+                                        trim(
+                                            $member[
+                                                'email'
+                                            ]
+                                        )
+                                    ),
+                                ]
+                            )
+                            ->value('s.id');
 
-                DB::table('competition_registration_members')
-                    ->insert([
+                    DB::table(
+                        'competition_registration_members'
+                    )->insert([
                         'competition_registration_id' =>
                             $registrationId,
-                        'student_id' => $memberStudentId,
-                        'member_name' => trim($member['name']),
-                        'member_email' => trim($member['email']),
-                        'role' => 'member',
+
+                        'student_id' =>
+                            $memberStudentId,
+
+                        'member_name' =>
+                            trim(
+                                $member['name']
+                            ),
+
+                        'member_email' =>
+                            trim(
+                                $member['email']
+                            ),
+
+                        'role' =>
+                            'member',
+
                         'member_role' =>
-                            $member['role'] ?? null,
-                        'created_at' => now(),
-                        'updated_at' => now(),
+                            $member['role'] ??
+                            null,
+
+                        'created_at' =>
+                            now(),
+
+                        'updated_at' =>
+                            now(),
                     ]);
+                }
+
+                return $registrationId;
             }
-
-            return $registrationId;
-        });
-
-        NotificationService::create(
-            $request->user()->id,
-            'competition',
-            'Competition application sent',
-            'Your application for "' .
-                $competition->title .
-                '" was sent successfully.',
-            [
-                'category' => 'competitions',
-                'icon' => '🏆',
-                'action_label' => 'View competition',
-                'action_tab' => 'Competitions',
-                'competition_id' => $competitionId,
-            ]
         );
 
-        return response()->json([
-            'message' => 'Competition application sent successfully.',
-            'registration' => $this->registrationData(
-                DB::table('competition_registrations')
-                    ->where('id', $registrationId)
+    /*
+    |--------------------------------------------------------------------------
+    | Student notification
+    |--------------------------------------------------------------------------
+    */
+
+    NotificationService::create(
+        $request->user()->id,
+        'competition',
+        'Competition application sent',
+        'Your application for "' .
+            $competition->title .
+            '" was sent successfully.',
+        [
+            'category' =>
+                'competitions',
+
+            'icon' => '🏆',
+
+            'action_label' =>
+                'View competition',
+
+            'action_tab' =>
+                'Competitions',
+
+            'competition_id' =>
+                $competitionId,
+        ]
+    );
+
+    /*
+    |--------------------------------------------------------------------------
+    | Trainer notification
+    |--------------------------------------------------------------------------
+    */
+
+    NotificationService::createForTrainer(
+        (int) $competition->created_by,
+        'competition',
+        $existing
+            ? 'Competition registration resubmitted'
+            : 'New competition registration',
+        $request->user()->name .
+            ' registered for "' .
+            $competition->title .
+            '".',
+        [
+            'category' =>
+                'competitions',
+
+            'icon' => '🏆',
+
+            'action_label' =>
+                'Review registration',
+
+            'action_tab' =>
+                'Competitions',
+
+            'competition_id' =>
+                (int) $competitionId,
+
+            'registration_id' =>
+                (int) $registrationId,
+
+            'student_id' =>
+                (int) $student->id,
+        ]
+    );
+
+    return response()->json([
+        'message' =>
+            'Competition application sent successfully.',
+
+        'registration' =>
+            $this->registrationData(
+                DB::table(
+                    'competition_registrations'
+                )
+                    ->where(
+                        'id',
+                        $registrationId
+                    )
                     ->first(),
+
                 $student->id
             ),
-        ], $existing ? 200 : 201);
-    }
+    ], $existing ? 200 : 201);
+}
 
     public function saveSubmission(
         Request $request,
@@ -680,69 +868,92 @@ class CompetitionController extends Controller
     }
 
     public function submit(
-        Request $request,
-        int $competitionId
-    ) {
-        $student = $this->studentFromRequest($request);
+    Request $request,
+    int $competitionId
+) {
+    $student = $this->studentFromRequest($request);
 
-        if (!$student) {
-            return response()->json([
-                'message' => 'Student profile not found.',
-            ], 404);
-        }
+    if (!$student) {
+        return response()->json([
+            'message' =>
+                'Student profile not found.',
+        ], 404);
+    }
 
-        $context = $this->submissionContext(
+    $context =
+        $this->submissionContext(
             $competitionId,
             $student->id
         );
 
-        if (
-            !$context['competition'] ||
-            !$context['registration']
-        ) {
-            return response()->json([
-                'message' => 'Competition registration not found.',
-            ], 404);
-        }
+    if (
+        !$context['competition'] ||
+        !$context['registration']
+    ) {
+        return response()->json([
+            'message' =>
+                'Competition registration not found.',
+        ], 404);
+    }
 
-        if ($context['registration']->status !== 'approved') {
-            return response()->json([
-                'message' => 'Your competition application must be approved first.',
-            ], 422);
-        }
+    if (
+        $context['registration']->status !==
+        'approved'
+    ) {
+        return response()->json([
+            'message' =>
+                'Your competition application must be approved first.',
+        ], 422);
+    }
 
-        if (!$this->submissionsAreOpen($context['competition'])) {
-            return response()->json([
-                'message' => 'Submissions are closed for this competition.',
-            ], 422);
-        }
+    if (
+        !$this->submissionsAreOpen(
+            $context['competition']
+        )
+    ) {
+        return response()->json([
+            'message' =>
+                'Submissions are closed for this competition.',
+        ], 422);
+    }
 
-        $submission = DB::table('competition_submissions')
+    $submission =
+        DB::table(
+            'competition_submissions'
+        )
             ->where(
                 'competition_registration_id',
-                $context['registration']->id
+                $context[
+                    'registration'
+                ]->id
             )
             ->first();
 
-        if (!$submission) {
-            return response()->json([
-                'message' => 'Save the submission draft first.',
-            ], 422);
-        }
+    if (!$submission) {
+        return response()->json([
+            'message' =>
+                'Save the submission draft first.',
+        ], 422);
+    }
 
-        if (
-            !in_array(
-                $submission->status,
-                ['draft', 'changes_requested'],
-                true
-            )
-        ) {
-            return response()->json([
-                'message' => 'This competition submission is locked.',
-            ], 422);
-        }
+    if (
+        !in_array(
+            $submission->status,
+            [
+                'draft',
+                'changes_requested',
+            ],
+            true
+        )
+    ) {
+        return response()->json([
+            'message' =>
+                'This competition submission is locked.',
+        ], 422);
+    }
 
-        $fileCount = DB::table(
+    $fileCount =
+        DB::table(
             'competition_submission_files'
         )
             ->where(
@@ -751,52 +962,131 @@ class CompetitionController extends Controller
             )
             ->count();
 
-        if (
-            $fileCount < 1 &&
-            !$submission->github_url &&
-            !$submission->demo_url
-        ) {
-            return response()->json([
-                'message' => 'Add at least one file, GitHub URL, or demo URL before submitting.',
-            ], 422);
-        }
-
-        $wasChangesRequested =
-            $submission->status === 'changes_requested';
-
-        DB::table('competition_submissions')
-            ->where('id', $submission->id)
-            ->update([
-                'status' => 'submitted',
-                'submitted_at' => now(),
-                'updated_at' => now(),
-            ]);
-
-        NotificationService::create(
-            $request->user()->id,
-            'competition',
-            $wasChangesRequested
-                ? 'Competition work resubmitted'
-                : 'Competition work submitted',
-            'Your work for "' .
-                $context['competition']->title .
-                '" was submitted successfully.',
-            [
-                'category' => 'competitions',
-                'icon' => '📤',
-                'action_label' => 'View competition',
-                'action_tab' => 'Competitions',
-                'competition_id' => $competitionId,
-            ]
-        );
-
+    if (
+        $fileCount < 1 &&
+        !$submission->github_url &&
+        !$submission->demo_url
+    ) {
         return response()->json([
-            'message' => 'Competition work submitted successfully.',
-            'submission' => $this->submissionData(
+            'message' =>
+                'Add at least one file, GitHub URL, or demo URL before submitting.',
+        ], 422);
+    }
+
+    $wasChangesRequested =
+        $submission->status ===
+        'changes_requested';
+
+    DB::table(
+        'competition_submissions'
+    )
+        ->where(
+            'id',
+            $submission->id
+        )
+        ->update([
+            'status' =>
+                'submitted',
+
+            'submitted_at' =>
+                now(),
+
+            'updated_at' =>
+                now(),
+        ]);
+
+    /*
+    |--------------------------------------------------------------------------
+    | Student notification
+    |--------------------------------------------------------------------------
+    */
+
+    NotificationService::create(
+        $request->user()->id,
+        'competition',
+        $wasChangesRequested
+            ? 'Competition work resubmitted'
+            : 'Competition work submitted',
+        'Your work for "' .
+            $context[
+                'competition'
+            ]->title .
+            '" was submitted successfully.',
+        [
+            'category' =>
+                'competitions',
+
+            'icon' => '📤',
+
+            'action_label' =>
+                'View competition',
+
+            'action_tab' =>
+                'Competitions',
+
+            'competition_id' =>
+                $competitionId,
+        ]
+    );
+
+    /*
+    |--------------------------------------------------------------------------
+    | Trainer notification
+    |--------------------------------------------------------------------------
+    */
+
+    NotificationService::createForTrainer(
+        (int) $context[
+            'competition'
+        ]->created_by,
+        'competition',
+        $wasChangesRequested
+            ? 'Competition work resubmitted'
+            : 'New competition submission',
+        $request->user()->name .
+            ' submitted work for "' .
+            $context[
+                'competition'
+            ]->title .
+            '".',
+        [
+            'category' =>
+                'competitions',
+
+            'icon' => '📥',
+
+            'action_label' =>
+                'Review submission',
+
+            'action_tab' =>
+                'Competitions',
+
+            'competition_id' =>
+                (int) $competitionId,
+
+            'registration_id' =>
+                (int) $context[
+                    'registration'
+                ]->id,
+
+            'submission_id' =>
+                (int) $submission->id,
+
+            'student_id' =>
+                (int) $student->id,
+        ]
+    );
+
+    return response()->json([
+        'message' =>
+            'Competition work submitted successfully.',
+
+        'submission' =>
+            $this->submissionData(
                 $submission->id
             ),
-        ]);
-    }
+    ]);
+}
 
     private function studentFromRequest(Request $request)
     {
